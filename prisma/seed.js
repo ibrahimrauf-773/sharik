@@ -18,11 +18,12 @@ const D = 864e5;
 
 (async () => {
   if (env.isProd && process.env.ALLOW_PROD_SEED !== "true") { console.error("Refusing to wipe a production DB. Set ALLOW_PROD_SEED=true to override."); process.exit(1); }
-  const tables = ["AuditLog", "LedgerLine", "JournalEntry", "LedgerAccount", "Payout", "Distribution", "WebhookEvent", "Payment", "Investment", "Document", "Campaign", "Session", "AuthToken", "Notification", "Job", "User"];
+  const tables = ["AnalyticsEvent", "AuditLog", "LedgerLine", "JournalEntry", "LedgerAccount", "Payout", "Distribution", "WebhookEvent", "Payment", "Investment", "Document", "Campaign", "Session", "AuthToken", "Notification", "Job", "User"];
   await db.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t}"`).join(", ")} RESTART IDENTITY CASCADE`);
   if (fs.existsSync(env.UPLOAD_DIR) && require("../src/services/storage").kind === "local") fs.rmSync(env.UPLOAD_DIR, { recursive: true, force: true });
 
   const now = new Date();
+  const DEV_OWNER_TOTP = "JBSWY3DPEHPK3PXP"; // public dev-only TOTP secret
   const mk = async (email, name, role, pw) => db.user.create({ data: { email, name, role, passwordHash: await bcrypt.hash(pw, 10), emailVerifiedAt: now } });
   const investor = await mk("investor@sharik.demo", "Ayesha Investor (Demo)", "investor", "Investor@123");
   const founder = await mk("founder@sharik.demo", "Bilal Founder (Demo)", "founder", "Founder@123");
@@ -89,9 +90,22 @@ const D = 864e5;
     if (c.status !== "pending") await put("fatwa", `Shariah board ruling ${c.shariahRef || ""}`.trim());
     await put("agreement", `${c.structure} agreement (template)`, "private");
   }
+  // Dev/test-only owner (founder dashboard). NEVER created in production — prod owner comes from OWNER_EMAIL/OWNER_PASSWORD.
+  if (!env.isProd) {
+    const { encrypt } = require("../src/lib/crypto");
+    await db.user.create({ data: { email: "owner@sharik.demo", name: "Owner (Dev)", role: "owner", passwordHash: await bcrypt.hash("Owner@123", 10), emailVerifiedAt: now, totpEnabled: true, totpSecretEnc: encrypt(DEV_OWNER_TOTP) } });
+    // sample first-party analytics so the dashboard has traffic to show
+    const paths = ["/", "/browse", "/c/chai-junction", "/signup", "/login", "/learn"], rows = [];
+    for (let d = 0; d < 30; d++) for (let k = 0; k < 5 + ((d * 7) % 11); k++) {
+      const at = new Date(now.getTime() - d * 864e5 - k * 3.6e6), v = `v${d}-${k % 4}`;
+      rows.push({ at, name: "pageview", path: paths[(d + k) % paths.length], visitorHash: v, device: k % 3 ? "desktop" : "mobile", referrer: k % 4 === 0 ? "google.com" : null });
+      if (k % 5 === 0) rows.push({ at, name: "invest_start", path: "/invest", visitorHash: v });
+    }
+    await db.analyticsEvent.createMany({ data: rows });
+  }
   await db.$executeRawUnsafe(`TRUNCATE "Notification", "Job" RESTART IDENTITY`);
   const tb = await L.trialBalance();
   console.log(`Seeded: ${await db.user.count()} users, ${await db.campaign.count()} campaigns, ${await db.investment.count()} investments, ${await db.journalEntry.count()} journal entries; ledger balanced=${tb.balanced}`);
-  console.log("Demo logins: investor@sharik.demo / Investor@123 · founder@sharik.demo / Founder@123 · admin@sharik.demo / Admin@123 · crowd1-6@sharik.demo / Crowd@1234");
+  console.log("Demo logins: investor@sharik.demo / Investor@123 · founder@sharik.demo / Founder@123 · admin@sharik.demo / Admin@123 · crowd1-6@sharik.demo / Crowd@1234" + (env.isProd ? "" : " · owner@sharik.demo / Owner@123 (dev only; TOTP secret " + DEV_OWNER_TOTP + ")"));
   await db.$disconnect();
 })().catch(async (e) => { console.error(e); await db.$disconnect(); process.exit(1); });

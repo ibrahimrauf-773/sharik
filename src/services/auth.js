@@ -17,9 +17,9 @@ const pub = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role, emai
 const cookieOpts = () => ({ httpOnly: true, secure: env.isProd || env.cookieSameSite === "none", sameSite: env.cookieSameSite, path: "/api/v1/auth", maxAge: env.REFRESH_TOKEN_DAYS * 864e5 });
 const accessToken = (u, sid) => jwt.sign({ sub: u.id, role: u.role, sid }, env.JWT_ACCESS_SECRET, { expiresIn: env.ACCESS_TOKEN_TTL, issuer: "sharik" });
 
-async function createSession(u, req) {
+async function createSession(u, req, mfa = false) {
   const id = randomToken(16), secret = randomToken(32), csrf = randomToken(24);
-  await db.session.create({ data: { id, userId: u.id, refreshHash: pep(secret), csrfHash: sha256(csrf), userAgent: String(req.headers["user-agent"] || "").slice(0, 200), ip: req.ip, expiresAt: new Date(Date.now() + env.REFRESH_TOKEN_DAYS * 864e5) } });
+  await db.session.create({ data: { id, userId: u.id, refreshHash: pep(secret), csrfHash: sha256(csrf), mfa, userAgent: String(req.headers["user-agent"] || "").slice(0, 200), ip: req.ip, expiresAt: new Date(Date.now() + env.REFRESH_TOKEN_DAYS * 864e5) } });
   return { refresh: `${id}.${secret}`, csrf, sid: id };
 }
 function issue(res, u, s) {
@@ -48,7 +48,7 @@ async function login(req, res, { email, password, totp }) {
     if (!authenticator.check(String(totp), decrypt(u.totpSecretEnc))) { await audit("auth.totp_failed", { actorId: u.id, ip: req.ip }); throw new AppError(401, "totp_invalid", "Invalid authentication code"); }
   }
   await audit("auth.login", { actorId: u.id, entity: "User", entityId: u.id, ip: req.ip });
-  return issue(res, u, await createSession(u, req));
+  return issue(res, u, await createSession(u, req, !!u.totpEnabled));
 }
 function readCookie(req) {
   const v = req.cookies?.[COOKIE]; if (!v || !v.includes(".")) throw E.unauth("No session", "no_session");
@@ -94,7 +94,7 @@ async function authenticate(req) {
   let p; try { p = jwt.verify(h.slice(7), env.JWT_ACCESS_SECRET, { issuer: "sharik" }); } catch (e) { throw E.unauth(e.name === "TokenExpiredError" ? "Access token expired" : "Invalid token", e.name === "TokenExpiredError" ? "token_expired" : "invalid_token"); }
   const s = await db.session.findUnique({ where: { id: p.sid }, include: { user: true } });
   if (!s || s.revokedAt || s.user.deletedAt) throw E.unauth("Session revoked", "session_revoked");
-  req.auth = { sid: p.sid }; return s.user;
+  req.auth = { sid: p.sid, mfa: s.mfa }; return s.user;
 }
 async function useToken(type, raw) {
   const t = await db.authToken.findUnique({ where: { tokenHash: sha256(raw) }, include: { user: true } });
@@ -141,6 +141,7 @@ async function totpEnable(user, code, ip) {
 async function totpDisable(user, { password, code }, ip) {
   const u = await db.user.findUnique({ where: { id: user.id } });
   if (!u.totpEnabled) return { ok: true };
+  if (u.role === "owner") throw E.forbidden("2FA is mandatory for the owner account");
   if (!(await bcrypt.compare(password, u.passwordHash))) throw E.unauth("Wrong password", "invalid_credentials");
   if (!authenticator.check(String(code), decrypt(u.totpSecretEnc))) throw E.bad("Invalid code");
   await db.user.update({ where: { id: u.id }, data: { totpEnabled: false, totpSecretEnc: null } });

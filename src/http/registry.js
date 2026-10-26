@@ -2,7 +2,7 @@
 const express = require("express");
 const { z } = require("zod");
 const { zodToJsonSchema } = require("zod-to-json-schema");
-const { E } = require("../lib/errors");
+const { E, AppError } = require("../lib/errors");
 const auth = require("../services/auth");
 const router = express.Router();
 const ops = [];
@@ -17,6 +17,13 @@ const guard = (mode) => async (req, res, next) => {
     req.user = user;
     if (mode === "optional") return next();
     if (!user) throw E.unauth();
+    if (mode === "owner") {
+      // Owner dashboard: founder-only. No other role (admin included) may pass, and 2FA is mandatory.
+      if (user.role !== "owner") throw E.forbidden("Owner only");
+      if (!user.totpEnabled) throw new AppError(403, "totp_setup_required", "Enable two-factor authentication to access the owner dashboard");
+      if (!req.auth?.mfa) throw new AppError(403, "totp_session_required", "Sign in again with your authentication code");
+      return next();
+    }
     if (Array.isArray(mode) && !mode.includes(user.role)) throw E.forbidden(`Requires role: ${mode.join(" or ")}`);
     next();
   } catch (e) { next(e); }

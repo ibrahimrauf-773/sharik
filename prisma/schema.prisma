@@ -15,7 +15,7 @@ model User {
   email           String       @unique
   passwordHash    String
   name            String
-  role            String       @default("investor") // investor | founder | admin
+  role            String       @default("investor") // investor | founder | admin | owner
   emailVerifiedAt DateTime?
   totpSecretEnc   String? // AES-GCM encrypted
   totpEnabled     Boolean      @default(false)
@@ -47,6 +47,7 @@ model Session {
   lastUsedAt  DateTime  @default(now())
   expiresAt   DateTime
   revokedAt   DateTime?
+  mfa         Boolean   @default(false) // true when the login passed a TOTP check
 
   @@index([userId])
 }
@@ -274,4 +275,20 @@ model AuditLog {
 
   @@index([action])
   @@index([entity, entityId])
+}
+
+/// Privacy-safe first-party analytics: no IP, no user agent string, no cookies.
+/// visitorHash = HMAC(server secret, random client id + UTC day) so visitors can't be tracked across days.
+model AnalyticsEvent {
+  id          Int      @id @default(autoincrement())
+  at          DateTime @default(now())
+  name        String // pageview | signup_view | invest_start | invest_confirm | ...
+  path        String
+  referrer    String? // host only
+  visitorHash String
+  device      String   @default("desktop") // mobile | desktop
+  role        String? // logged-in role (no user id)
+
+  @@index([at])
+  @@index([name, at])
 }

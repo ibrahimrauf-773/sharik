@@ -152,4 +152,20 @@ def("get", "/admin/jobs", { tag: A, summary: "Background job queue (Postgres bac
 if (env.devOutbox) def("get", "/dev/outbox", { tag: "dev", summary: "Dev only: recent emails/SMS (disabled in production)", query: z.object({ to: z.string().optional(), limit: z.coerce.number().int().min(1).max(100).default(20) }) }, async (req) =>
   db.notification.findMany({ where: req.q.to ? { to: req.q.to.toLowerCase() } : {}, orderBy: { id: "desc" }, take: req.q.limit }));
 
+// ---------- owner dashboard (founder only; TOTP mandatory; no other role incl. admin) ----------
+const owner = require("../services/owner");
+const dateQ = z.string().regex(/^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/).optional();
+const ownerQ = z.object({ from: dateQ, to: dateQ, format: z.enum(["json", "csv"]).optional(), action: z.string().max(60).optional(), limit: z.coerce.number().int().min(1).max(500).optional() });
+const sendCSV = (res, section, body) => res.status(200).type("text/csv; charset=utf-8").set("Content-Disposition", `attachment; filename="sharik-${section}-${new Date().toISOString().slice(0, 10)}.csv"`).set("Cache-Control", "no-store").send(body);
+for (const section of Object.keys(owner.SECTIONS)) {
+  def("get", `/owner/${section}`, { tag: "owner", summary: `Owner dashboard: ${section} (from/to = YYYY-MM-DD; ?format=csv to export)`, auth: "owner", query: ownerQ }, async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    if (req.q.format === "csv") return sendCSV(res, section, await owner.exportCSV(section, req.q));
+    return owner.SECTIONS[section](req.q);
+  });
+}
+const trackLimiter = rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: "draft-7", legacyHeaders: false, skip: () => env.isTest && !process.env.TEST_RATE_LIMIT });
+def("post", "/track", { tag: "analytics", summary: "First-party, cookieless analytics event (no IP stored)", rateLimit: trackLimiter, status: 202,
+  body: z.object({ name: z.string().regex(/^[a-z_]{2,40}$/).default("pageview"), path: z.string().max(200), referrer: z.string().max(500).optional(), cid: z.string().regex(/^[A-Za-z0-9-]{8,64}$/).optional() }) }, (req) => owner.track(req, req.body));
+
 module.exports = { authLimiter };
