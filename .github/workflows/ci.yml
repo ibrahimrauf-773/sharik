@@ -1,0 +1,46 @@
+name: ci
+on:
+  push: { branches: [main, staging] }
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: sharik, POSTGRES_PASSWORD: sharik, POSTGRES_DB: sharik_test }
+        ports: ["5433:5432"]
+        options: --health-cmd "pg_isready -U sharik" --health-interval 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://sharik:sharik@localhost:5433/sharik_test
+      DATABASE_URL: postgresql://sharik:sharik@localhost:5433/sharik_test
+      DIRECT_URL: postgresql://sharik:sharik@localhost:5433/sharik_test
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma validate
+      - run: npm run test:unit
+      - run: npx vitest run
+      - run: npx playwright install --with-deps chromium
+      - run: CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())") npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: test-results }
+  deploy:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    steps:
+      - name: Trigger Render deploy (API; runs prisma migrate deploy in build)
+        if: ${{ env.RENDER_DEPLOY_HOOK_URL != '' }}
+        env: { RENDER_DEPLOY_HOOK_URL: "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" }
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+      - name: Trigger Vercel deploy (front end)
+        if: ${{ env.VERCEL_DEPLOY_HOOK_URL != '' }}
+        env: { VERCEL_DEPLOY_HOOK_URL: "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}" }
+        run: curl -fsS -X POST "$VERCEL_DEPLOY_HOOK_URL"

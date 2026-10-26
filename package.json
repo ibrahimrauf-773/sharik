@@ -1,0 +1,62 @@
+{
+  "name": "sharik-app",
+  "version": "1.0.0",
+  "description": "Sharik — Shariah-compliant equity crowdfunding MVP (fictional demo data)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:local": "node scripts/dev-db.mjs",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "setup": "prisma migrate deploy && node prisma/seed.js",
+    "seed": "node prisma/seed.js",
+    "test": "npm run test:unit && npm run test:int",
+    "test:unit": "vitest run tests/unit",
+    "test:int": "vitest run",
+    "test:e2e": "playwright test",
+    "test:smoke": "./test-e2e.sh",
+    "test:all": "vitest run && playwright test",
+    "render-build": "npm ci && prisma generate && prisma migrate deploy",
+    "vercel-build": "node -e \"require('fs').writeFileSync('public/config.js','window.SHARIK_API_BASE='+JSON.stringify(process.env.SHARIK_API_BASE||'')+';')\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "@sentry/node": "^11.9.0",
+    "@supabase/supabase-js": "^2.109.0",
+    "bcryptjs": "^3.0.3",
+    "bullmq": "^6.4.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "embedded-postgres": "^18.4.0-beta.17",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.5.0",
+    "otplib": "^12.0.1",
+    "pdfkit": "^0.20.2",
+    "pino": "^10.4.0",
+    "pino-http": "^11.0.0",
+    "prisma": "^6.19.3",
+    "qrcode": "^1.5.4",
+    "resend": "^6.34.1",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "supertest": "^7.3.1",
+    "vitest": "^4.1.12"
+  }
+}

@@ -1,0 +1,37 @@
+# Render Blueprint — Sharik API (free web service). Postgres lives on Supabase (free tier).
+# Values marked sync:false must be pasted in the Render dashboard (Blueprint → sharik-api → Environment).
+services:
+  - type: web
+    name: sharik-api
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    autoDeploy: false            # deploys are triggered by GitHub Actions deploy hook after tests pass
+    buildCommand: npm run render-build   # npm ci + prisma generate + prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: NODE_VERSION, value: "20" }
+      - { key: DATABASE_URL, sync: false }        # Supabase → Connect → Transaction pooler (6543) + ?pgbouncer=true&connection_limit=5
+      - { key: DIRECT_URL, sync: false }          # Supabase → Connect → Session pooler (5432) — used by migrations
+      - { key: APP_URL, sync: false }             # https://<your-project>.vercel.app (links in emails)
+      - { key: API_URL, sync: false }             # https://sharik-api.onrender.com (webhooks + signed file URLs)
+      - { key: CORS_ORIGIN, sync: false }         # https://<your-project>.vercel.app (comma-separate several)
+      - { key: COOKIE_SAMESITE, value: lax }      # lax when the front end proxies /api via Vercel rewrites (recommended); none if calling Render cross-site
+      - { key: JWT_ACCESS_SECRET, generateValue: true }
+      - { key: REFRESH_TOKEN_PEPPER, generateValue: true }
+      - { key: WEBHOOK_SECRET, generateValue: true }
+      - { key: FILE_URL_SECRET, generateValue: true }
+      - { key: FIELD_ENCRYPTION_KEY, sync: false } # openssl rand -base64 32 — KEEP A BACKUP; losing it makes stored CNICs unreadable
+      - { key: PLATFORM_FEE_BPS, value: "250" }
+      - { key: JOBS_MODE, value: worker }
+      - { key: REDIS_URL, sync: false }           # optional: Upstash Redis (rediss://...) → BullMQ + Redis cache. Leave blank for Postgres queue
+      - { key: RESEND_API_KEY, sync: false }      # optional: resend.com → API Keys. Blank = emails logged only
+      - { key: MAIL_FROM, value: "Sharik <onboarding@resend.dev>" }
+      - { key: SUPABASE_URL, sync: false }        # optional: Supabase → Project Settings → API → Project URL (enables Storage)
+      - { key: SUPABASE_SERVICE_ROLE_KEY, sync: false } # optional: Supabase → Project Settings → API keys → service_role (secret)
+      - { key: SUPABASE_BUCKET, value: sharik-docs }
+      - { key: SENTRY_DSN, sync: false }          # optional: sentry.io → Project → Client Keys (DSN)
+      - { key: LOG_LEVEL, value: info }

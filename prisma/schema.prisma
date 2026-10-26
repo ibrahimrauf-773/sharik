@@ -1,0 +1,277 @@
+// Single PostgreSQL schema for dev (embedded Postgres), test, staging and prod (Supabase).
+// All money is stored as integer paisa (1 PKR = 100 paisa) in BigInt columns.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              Int          @id @default(autoincrement())
+  email           String       @unique
+  passwordHash    String
+  name            String
+  role            String       @default("investor") // investor | founder | admin
+  emailVerifiedAt DateTime?
+  totpSecretEnc   String? // AES-GCM encrypted
+  totpEnabled     Boolean      @default(false)
+  cnicEnc         String? // AES-GCM encrypted CNIC
+  cnicLast4       String?
+  phone           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+  campaigns       Campaign[]
+  investments     Investment[]
+  payouts         Payout[]
+  sessions        Session[]
+  tokens          AuthToken[]
+  documents       Document[]
+
+  @@index([role])
+}
+
+model Session {
+  id          String    @id
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  refreshHash String
+  csrfHash    String
+  userAgent   String?
+  ip          String?
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime  @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+
+  @@index([userId])
+}
+
+model AuthToken {
+  id        Int       @id @default(autoincrement())
+  type      String // verify_email | reset_password
+  tokenHash String    @unique
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, type])
+}
+
+model Campaign {
+  id                Int            @id @default(autoincrement())
+  slug              String         @unique
+  name              String
+  emoji             String         @default("🚀")
+  bg                String         @default("#e8f5ee")
+  sector            String
+  structure         String // Musharakah | Mudarabah
+  city              String
+  description       String
+  useOfFunds        String         @default("")
+  secpRegNo         String         @default("")
+  targetPaisa       BigInt
+  valuationPaisa    BigInt
+  minTicketPaisa    BigInt         @default(500000)
+  committedPaisa    BigInt         @default(0) // reserved (pending + escrow); guarded so it never exceeds target
+  investorRatio     Int
+  durationDays      Int            @default(30)
+  status            String         @default("pending") // pending | live | closing | rejected | funded | failed
+  haramSector       Boolean        @default(false)
+  interestDebtRatio Float          @default(0)
+  interestIncomePct Float          @default(0)
+  screening         Json?
+  shariahRef        String?
+  reviewNote        String?
+  goLiveAt          DateTime?
+  deadline          DateTime?
+  closedAt          DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?
+  founderId         Int
+  founder           User           @relation(fields: [founderId], references: [id])
+  investments       Investment[]
+  distributions     Distribution[]
+  documents         Document[]
+
+  @@index([status, deadline])
+  @@index([founderId])
+}
+
+model Investment {
+  id             Int       @id @default(autoincrement())
+  ref            String    @unique
+  idempotencyKey String?   @unique
+  amountPaisa    BigInt
+  status         String    @default("pending_payment") // pending_payment | escrow | active | refunded | cancelled
+  method         String    @default("JazzCash")
+  contract       Json?
+  createdAt      DateTime  @default(now())
+  settledAt      DateTime?
+  userId         Int
+  user           User      @relation(fields: [userId], references: [id])
+  campaignId     Int
+  campaign       Campaign  @relation(fields: [campaignId], references: [id])
+  payments       Payment[]
+  payouts        Payout[]
+
+  @@index([campaignId, status])
+  @@index([userId])
+}
+
+model Payment {
+  id           String     @id
+  provider     String     @default("mockpay")
+  amountPaisa  BigInt
+  status       String     @default("pending") // pending | succeeded | failed | expired
+  investmentId Int
+  investment   Investment @relation(fields: [investmentId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([investmentId])
+}
+
+model WebhookEvent {
+  id         String   @id // provider event id => idempotency
+  provider   String
+  type       String
+  payload    Json
+  status     String   @default("processed") // processed | ignored | error
+  receivedAt DateTime @default(now())
+}
+
+model Distribution {
+  id               Int      @id @default(autoincrement())
+  period           String
+  netResultPaisa   BigInt
+  impermissiblePct Float    @default(0)
+  note             String   @default("")
+  status           String   @default("queued") // queued | posted
+  createdAt        DateTime @default(now())
+  campaignId       Int
+  campaign         Campaign @relation(fields: [campaignId], references: [id])
+  payouts          Payout[]
+
+  @@unique([campaignId, period])
+}
+
+model Payout {
+  id                Int          @id @default(autoincrement())
+  amountPaisa       BigInt
+  purificationPaisa BigInt       @default(0)
+  donated           Boolean      @default(false)
+  distributionId    Int
+  distribution      Distribution @relation(fields: [distributionId], references: [id])
+  investmentId      Int
+  investment        Investment   @relation(fields: [investmentId], references: [id])
+  userId            Int
+  user              User         @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+// ---- Double-entry ledger. Line amount > 0 = debit, < 0 = credit. Every entry sums to 0.
+model LedgerAccount {
+  id         Int          @id @default(autoincrement())
+  code       String       @unique // e.g. wallet:user:3, escrow:campaign:7, fee:platform
+  type       String // asset | liability | revenue
+  name       String
+  userId     Int?
+  campaignId Int?
+  createdAt  DateTime     @default(now())
+  lines      LedgerLine[]
+}
+
+model JournalEntry {
+  id             Int          @id @default(autoincrement())
+  idempotencyKey String       @unique
+  kind           String // payment | release | refund | distribution | purification | withdrawal
+  memo           String       @default("")
+  createdAt      DateTime     @default(now())
+  lines          LedgerLine[]
+}
+
+model LedgerLine {
+  id          Int           @id @default(autoincrement())
+  entryId     Int
+  entry       JournalEntry  @relation(fields: [entryId], references: [id])
+  accountId   Int
+  account     LedgerAccount @relation(fields: [accountId], references: [id])
+  amountPaisa BigInt
+
+  @@index([accountId])
+}
+
+model Document {
+  id         Int       @id @default(autoincrement())
+  kind       String // pitch_deck | financials | fatwa | agreement | offer_doc | kyc | contract | statement
+  title      String
+  filename   String
+  mime       String
+  size       Int
+  storageKey String    @unique
+  visibility String    @default("public") // public (campaign docs) | private (kyc, contracts)
+  campaignId Int?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+  ownerId    Int?
+  owner      User?     @relation(fields: [ownerId], references: [id])
+  createdAt  DateTime  @default(now())
+  deletedAt  DateTime?
+
+  @@index([campaignId])
+  @@index([ownerId])
+}
+
+model Job {
+  id          Int      @id @default(autoincrement())
+  type        String
+  payload     Json
+  status      String   @default("queued") // queued | running | done | failed
+  runAt       DateTime @default(now())
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(5)
+  lastError   String?
+  uniqueKey   String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, runAt])
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  channel   String // email | sms
+  to        String
+  template  String
+  subject   String    @default("")
+  body      String
+  status    String    @default("queued") // queued | sent | logged | failed
+  error     String?
+  userId    Int?
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  @@index([to])
+}
+
+model AuditLog {
+  id       Int      @id @default(autoincrement())
+  at       DateTime @default(now())
+  actorId  Int?
+  action   String
+  entity   String?
+  entityId String?
+  data     Json?
+  ip       String?
+
+  @@index([action])
+  @@index([entity, entityId])
+}
