@@ -1,4 +1,4 @@
-# Render Blueprint — Sharik API (free web service). Postgres lives on Supabase (free tier).
+# Render Blueprint — Shareek API (free web service). Postgres lives on Supabase (free tier).
 # Values marked sync:false must be pasted in the Render dashboard (Blueprint → sharik-api → Environment).
 services:
   - type: web
@@ -29,7 +29,7 @@ services:
       - { key: JOBS_MODE, value: worker }
       - { key: REDIS_URL, sync: false }           # optional: Upstash Redis (rediss://...) → BullMQ + Redis cache. Leave blank for Postgres queue
       - { key: RESEND_API_KEY, sync: false }      # optional: resend.com → API Keys. Blank = emails logged only
-      - { key: MAIL_FROM, value: "Sharik <onboarding@resend.dev>" }
+      - { key: MAIL_FROM, value: "Shareek <onboarding@resend.dev>" }
       - { key: SUPABASE_URL, sync: false }        # optional: Supabase → Project Settings → API → Project URL (enables Storage)
       - { key: SUPABASE_SERVICE_ROLE_KEY, sync: false } # optional: Supabase → Project Settings → API keys → service_role (secret)
       - { key: SUPABASE_BUCKET, value: sharik-docs }

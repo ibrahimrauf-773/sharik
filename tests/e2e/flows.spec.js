@@ -53,3 +53,25 @@ test("founder sees campaigns and upload form; forgot password flow", async ({ pa
   await page.fill("input[name=email]", "founder@sharik.demo"); await page.click("#ff button");
   await expect(page.getByText("Check your email")).toBeVisible();
 });
+
+test("PWA + mobile shell: manifest, service worker, tab bar, no CSP violations", async ({ page, request }) => {
+  const csp = [];
+  page.on("console", (m) => { if (/Content Security Policy|Refused to/i.test(m.text())) csp.push(m.text()); });
+  await page.setViewportSize({ width: 390, height: 844 });
+  const man = await request.get("/manifest.webmanifest");
+  expect(man.ok()).toBeTruthy();
+  const mj = await man.json();
+  expect(mj.short_name).toBe("Shareek");
+  expect(mj.display).toBe("standalone");
+  expect((await request.get("/sw.js")).ok()).toBeTruthy();
+  expect((await request.get("/offline.html")).ok()).toBeTruthy();
+  await page.goto("/");
+  await expect(page.locator("#tabs")).toBeVisible();
+  await expect(page.locator("#tabs a")).toHaveCount(4);
+  await expect(page.getByRole("heading", { name: /next great/ })).toBeVisible();
+  const reg = await page.evaluate(async () => { const r = await navigator.serviceWorker.ready; return !!r.active; });
+  expect(reg).toBeTruthy();
+  await page.locator(".camp").first().click();
+  await expect(page.locator(".cta-bar")).toBeVisible();
+  expect(csp).toEqual([]);
+});

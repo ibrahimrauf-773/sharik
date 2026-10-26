@@ -78,7 +78,7 @@ describe("owner dashboard data", () => {
       const r = await o.auth(o.get(`/api/v1/owner/${s}?format=csv&from=2000-01-01`));
       expect(r.status, s).toBe(200);
       expect(r.headers["content-type"]).toContain("text/csv");
-      expect(r.headers["content-disposition"]).toContain(`sharik-${s}-`);
+      expect(r.headers["content-disposition"]).toContain(`shareek-${s}-`);
     }
     const m = await o.auth(o.get("/api/v1/owner/money?format=csv"));
     expect(m.text.split("\n")[0]).toContain("date,raised");

@@ -1,4 +1,4 @@
-# Sharik — Shariah-compliant equity crowdfunding (production-hardened MVP)
+# Shareek — Shariah-compliant equity crowdfunding (production-hardened MVP)
 
 Pakistani startups raise PKR from investors through **Musharakah / Mudarabah**, with Shariah-board screening, escrow, profit/loss distributions and purification.
 
@@ -8,7 +8,7 @@ Pakistani startups raise PKR from investors through **Musharakah / Mudarabah**, 
 | Layer | What |
 |---|---|
 | API | Node 20, Express 5, versioned under **`/api/v1`**, Zod validation on every body/query/param, one error shape `{ error: { code, message, details?, requestId } }`, OpenAPI 3 at **`/api/docs`** (JSON at `/api/openapi.json`) |
-| Auth | 15-min JWT access token (memory only in the browser) + rotating refresh token in an **httpOnly cookie** (`sharik_rt`, path `/api/v1/auth`) with reuse detection; CSRF double-submit header `X-CSRF-Token` on refresh/logout; real logout / logout-everywhere (server-side session revocation); email verification + password reset via tokens; optional TOTP 2FA (otplib, QR code); role guards on every route (`public` / `user` / `investor` / `founder` / `admin`) |
+| Auth | 15-min JWT access token (memory only in the browser) + rotating refresh token in an **httpOnly cookie** (`shareek_rt`, path `/api/v1/auth`) with reuse detection; CSRF double-submit header `X-CSRF-Token` on refresh/logout; real logout / logout-everywhere (server-side session revocation); email verification + password reset via tokens; optional TOTP 2FA (otplib, QR code); role guards on every route (`public` / `user` / `investor` / `founder` / `admin`) |
 | DB | Postgres via Prisma **migrations** (`prisma/migrations`), indexes, soft deletes (`deletedAt`), DB triggers making `AuditLog`/`JournalEntry`/`LedgerLine` append-only, deferred trigger enforcing balanced journal entries, CHECK constraint so a campaign can **never be overfilled** (plus an atomic conditional UPDATE) |
 | Money | Integer **paisa** (BigInt columns). Double-entry ledger: gateway clearing, investor wallets, escrow per campaign, founder payout, platform fee, purification. Every entry is balanced and has an idempotency key; balances are derived from the ledger. Splits use largest-remainder (Hamilton) allocation |
 | Jobs | **BullMQ** when `REDIS_URL` is set; otherwise a Postgres queue (`FOR UPDATE SKIP LOCKED`, exponential backoff). Jobs: deadline close, payment expiry, refunds, distributions, notification delivery, webhook delivery |
@@ -60,7 +60,7 @@ Recommended topology: Vercel serves `public/` and **rewrites `/api/*` to Render*
 | `DATABASE_URL` | ✅ | Supabase → Connect → Transaction pooler (6543) + `?pgbouncer=true&connection_limit=5` |
 | `DIRECT_URL` | ✅ | Supabase → Connect → Session pooler (5432) |
 | `FIELD_ENCRYPTION_KEY` | ✅ | run `openssl rand -base64 32` locally. **Back it up** — losing it makes stored CNICs unreadable |
-| `APP_URL` | ✅ | your Vercel URL, e.g. `https://sharik.vercel.app` |
+| `APP_URL` | ✅ | your Vercel URL, e.g. `https://shareek.vercel.app` |
 | `API_URL` | ✅ | your Render URL, e.g. `https://sharik-api.onrender.com` (Render → service page, top) |
 | `CORS_ORIGIN` | ✅ | same as `APP_URL` (comma-separate several; never `*`) |
 | `COOKIE_SAMESITE` | preset `lax` | `none` only if the browser calls Render directly cross-site |

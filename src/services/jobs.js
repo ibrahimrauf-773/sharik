@@ -60,8 +60,8 @@ async function start() {
     const { Queue, Worker } = require("bullmq");
     const IORedis = require("ioredis");
     const connection = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null });
-    bull = { queue: new Queue("sharik", { connection }) };
-    bull.worker = new Worker("sharik", (job) => run(job.name, job.data), { connection, concurrency: 4 });
+    bull = { queue: new Queue("shareek", { connection }) };
+    bull.worker = new Worker("shareek", (job) => run(job.name, job.data), { connection, concurrency: 4 });
     bull.worker.on("failed", (job, err) => log.warn({ job: job?.id, type: job?.name, err: err.message }, "bull job failed"));
     log.info("job queue: BullMQ (Redis)");
   } else {

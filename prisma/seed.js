@@ -83,7 +83,7 @@ const D = 864e5;
 
   // sample documents (generated PDFs) through the storage adapter
   for (const [slug, c] of Object.entries(camps)) {
-    const lines = [`${c.name} — fictional sample document for the Sharik demo.`, `Sector: ${c.sector} · City: ${c.city} · Structure: ${c.structure}`, c.description, "All figures are fictional."];
+    const lines = [`${c.name} — fictional sample document for the Shareek demo.`, `Sector: ${c.sector} · City: ${c.city} · Structure: ${c.structure}`, c.description, "All figures are fictional."];
     const put = async (kind, title, visibility = "public") => docs.save({ buf: await pdf.samplePdf(title, lines), mime: "application/pdf", filename: `${slug}-${kind}.pdf`, kind, title, campaignId: c.id, visibility, actorId: founder.id });
     await put("pitch_deck", `${c.name} — Pitch deck`);
     await put("financials", `${c.name} — Financial summary`);

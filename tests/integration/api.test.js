@@ -52,13 +52,13 @@ describe("auth", () => {
   });
   it("refresh requires CSRF header, rotates, and detects reuse", async () => {
     const a = await login("crowd1@sharik.demo", "Crowd@1234");
-    const old = a.jar.getCookie("sharik_rt", { path: "/api/v1/auth", domain: "127.0.0.1", secure: false, script: false });
+    const old = a.jar.getCookie("shareek_rt", { path: "/api/v1/auth", domain: "127.0.0.1", secure: false, script: false });
     expect((await a.post(`${V}/auth/refresh`)).status).toBe(403);
     const r = await a.post(`${V}/auth/refresh`).set("X-CSRF-Token", a.csrf);
     expect(r.status).toBe(200); expect(r.body.accessToken).toBeTruthy();
     expect(String(r.headers["set-cookie"])).toMatch(/HttpOnly/i);
     // replay the old (rotated) refresh token -> session revoked
-    const replay = await request(app).post(`${V}/auth/refresh`).set("Cookie", `sharik_rt=${old ? old.value : "x"}`).set("X-CSRF-Token", a.csrf);
+    const replay = await request(app).post(`${V}/auth/refresh`).set("Cookie", `shareek_rt=${old ? old.value : "x"}`).set("X-CSRF-Token", a.csrf);
     expect(replay.status).toBe(401);
     const after = await request(app).get(`${V}/auth/me`).set("Authorization", "Bearer " + r.body.accessToken);
     expect(after.status).toBe(401);

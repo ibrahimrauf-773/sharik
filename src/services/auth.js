@@ -11,11 +11,11 @@ const { sha256, randomToken, safeEqual, encrypt, decrypt } = require("../lib/cry
 const { audit } = require("../lib/audit");
 const { notify } = require("./notify");
 authenticator.options = { window: 1 };
-const COOKIE = "sharik_rt";
+const COOKIE = "shareek_rt";
 const pep = (s) => sha256(env.REFRESH_TOKEN_PEPPER + ":" + s);
 const pub = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role, emailVerified: !!u.emailVerifiedAt, totpEnabled: u.totpEnabled, kycOnFile: !!u.cnicEnc, cnicLast4: u.cnicLast4 });
 const cookieOpts = () => ({ httpOnly: true, secure: env.isProd || env.cookieSameSite === "none", sameSite: env.cookieSameSite, path: "/api/v1/auth", maxAge: env.REFRESH_TOKEN_DAYS * 864e5 });
-const accessToken = (u, sid) => jwt.sign({ sub: u.id, role: u.role, sid }, env.JWT_ACCESS_SECRET, { expiresIn: env.ACCESS_TOKEN_TTL, issuer: "sharik" });
+const accessToken = (u, sid) => jwt.sign({ sub: u.id, role: u.role, sid }, env.JWT_ACCESS_SECRET, { expiresIn: env.ACCESS_TOKEN_TTL, issuer: "shareek" });
 
 async function createSession(u, req, mfa = false) {
   const id = randomToken(16), secret = randomToken(32), csrf = randomToken(24);
@@ -91,7 +91,7 @@ async function logout(req, res, all = false) {
 async function authenticate(req) {
   const h = req.get("authorization") || "";
   if (!h.startsWith("Bearer ")) return null;
-  let p; try { p = jwt.verify(h.slice(7), env.JWT_ACCESS_SECRET, { issuer: "sharik" }); } catch (e) { throw E.unauth(e.name === "TokenExpiredError" ? "Access token expired" : "Invalid token", e.name === "TokenExpiredError" ? "token_expired" : "invalid_token"); }
+  let p; try { p = jwt.verify(h.slice(7), env.JWT_ACCESS_SECRET, { issuer: "shareek" }); } catch (e) { throw E.unauth(e.name === "TokenExpiredError" ? "Access token expired" : "Invalid token", e.name === "TokenExpiredError" ? "token_expired" : "invalid_token"); }
   const s = await db.session.findUnique({ where: { id: p.sid }, include: { user: true } });
   if (!s || s.revokedAt || s.user.deletedAt) throw E.unauth("Session revoked", "session_revoked");
   req.auth = { sid: p.sid, mfa: s.mfa }; return s.user;
@@ -127,7 +127,7 @@ async function totpSetup(user) {
   if (user.totpEnabled) throw E.conflict("2FA already enabled");
   const secret = authenticator.generateSecret();
   await db.user.update({ where: { id: user.id }, data: { totpSecretEnc: encrypt(secret) } });
-  const otpauth = authenticator.keyuri(user.email, "Sharik", secret);
+  const otpauth = authenticator.keyuri(user.email, "Shareek", secret);
   return { secret, otpauthUrl: otpauth, qrDataUrl: await QRCode.toDataURL(otpauth) };
 }
 async function totpEnable(user, code, ip) {

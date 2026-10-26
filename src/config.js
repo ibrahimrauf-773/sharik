@@ -24,7 +24,7 @@ const schema = z.object({
   JOB_POLL_MS: z.coerce.number().default(1000),
   REDIS_URL: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
-  MAIL_FROM: z.string().default("Sharik <onboarding@resend.dev>"),
+  MAIL_FROM: z.string().default("Shareek <onboarding@resend.dev>"),
   SMS_PROVIDER: z.string().optional(),
   SUPABASE_URL: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),

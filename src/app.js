@@ -29,7 +29,7 @@ function createApp() {
   app.use((req, res, next) => { req.id = req.get("x-request-id") || crypto.randomUUID(); res.set("X-Request-Id", req.id); next(); });
   app.use(pinoHttp({ logger: log, serializers: { req: (r) => ({ id: r.id, method: r.method, url: r.url }), res: (r) => ({ statusCode: r.statusCode }) }, genReqId: (req) => req.id, autoLogging: { ignore: (req) => req.url === "/health" }, customLogLevel: (_q, res, err) => (err || res.statusCode >= 500 ? "error" : res.statusCode >= 400 ? "warn" : "info") }));
   app.use(helmet({
-    contentSecurityPolicy: { directives: { "default-src": ["'self'"], "script-src": ["'self'"], "script-src-attr": ["'unsafe-inline'"], "style-src": ["'self'", "'unsafe-inline'"], "img-src": ["'self'", "data:", "blob:"], "connect-src": ["'self'", ...env.corsOrigins.filter((o) => o !== "*")], "frame-ancestors": ["'none'"], "object-src": ["'none'"], "upgrade-insecure-requests": env.isProd ? [] : null } },
+    contentSecurityPolicy: { directives: { "default-src": ["'self'"], "script-src": ["'self'"], "script-src-attr": ["'unsafe-inline'"], "style-src": ["'self'", "'unsafe-inline'"], "img-src": ["'self'", "data:", "blob:"], "connect-src": ["'self'", ...env.corsOrigins.filter((o) => o !== "*")], "frame-ancestors": ["'none'"], "font-src": ["'self'"], "manifest-src": ["'self'"], "worker-src": ["'self'"], "object-src": ["'none'"], "upgrade-insecure-requests": env.isProd ? [] : null } },
     crossOriginResourcePolicy: { policy: "same-site" },
     hsts: env.isProd ? { maxAge: 15552000, includeSubDomains: true } : false,
   }));
@@ -55,12 +55,21 @@ function createApp() {
 
   app.get("/health", async (_req, res) => { try { await db.$queryRaw`SELECT 1`; res.json({ ok: true }); } catch { res.status(503).json({ ok: false }); } });
   app.get("/api/openapi.json", (req, res) => res.json(openapi(env.API_URL)));
-  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(null, { swaggerOptions: { url: "/api/openapi.json" }, customSiteTitle: "Sharik API docs" }));
+  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(null, { swaggerOptions: { url: "/api/openapi.json" }, customSiteTitle: "Shareek API docs" }));
   app.use("/api/v1", router);
   app.use("/api", (req, _res, next) => next(new AppError(404, "not_found", `No route ${req.method} ${req.originalUrl}${req.originalUrl.startsWith("/api/v1") ? "" : " (API is versioned: use /api/v1)"}`)));
 
   // Front end (same-origin when served by Render; Vercel serves /public separately)
-  app.use(express.static(path.join(__dirname, "..", "public"), { index: "index.html", maxAge: env.isProd ? "1h" : 0 }));
+  app.use(express.static(path.join(__dirname, "..", "public"), {
+    index: "index.html",
+    maxAge: env.isProd ? "1h" : 0,
+    setHeaders(res, file) {
+      if (file.endsWith(".webmanifest")) res.setHeader("Content-Type", "application/manifest+json");
+      // The service worker and HTML shell must always revalidate so new deploys roll out immediately.
+      if (/(sw\.js|\.html|\.webmanifest)$/.test(file)) res.setHeader("Cache-Control", "no-cache");
+      if (file.endsWith("sw.js")) res.setHeader("Service-Worker-Allowed", "/");
+    },
+  }));
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, _next) => {

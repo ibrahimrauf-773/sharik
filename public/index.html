@@ -1,35 +1,25 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sharik — Shariah-compliant equity crowdfunding (MVP)</title>
-<style>
-:root{--g:#0f5132;--g2:#198754;--gl:#e8f5ee;--gold:#c9a227;--goldl:#fbf3dc;--ink:#1d2a24;--mut:#5f6f67;--bd:#e3e9e5;--r:14px}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:#f7faf8}
-a{color:var(--g2);text-decoration:none}.demo{background:var(--gold);color:#2b2000;text-align:center;font-size:12px;font-weight:600;padding:6px}
-header{background:var(--g);color:#fff;position:sticky;top:0;z-index:5}.nav{max-width:1100px;margin:auto;display:flex;align-items:center;gap:18px;padding:12px 16px;flex-wrap:wrap}
-.logo{font-weight:800;font-size:22px;color:#fff}.logo span{color:var(--gold)}.nav a.l{color:#d6efe1;font-size:14px}.nav a.l:hover{color:#fff}.sp{flex:1}
-.wrap{max-width:1100px;margin:auto;padding:20px 16px}.btn{display:inline-block;border:0;border-radius:10px;padding:11px 18px;font-weight:600;cursor:pointer;background:var(--g2);color:#fff;font-size:15px}
-.btn.gold{background:var(--gold);color:#2b2000}.btn.o{background:#fff;color:var(--g);border:1px solid var(--bd)}
-.hero{background:linear-gradient(135deg,var(--g),#146c43);color:#fff;padding:48px 16px}.hero h1{font-size:clamp(28px,5vw,44px);margin:0 0 10px}.hero p{color:#d6efe1;max-width:620px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}.card{background:#fff;border:1px solid var(--bd);border-radius:var(--r);padding:16px}
-.camp .cv{height:90px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:10px}
-.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--gl);color:var(--g);margin:2px 4px 2px 0}.tag.gd{background:var(--goldl);color:#7a5c00}
-.bar{height:9px;background:#e6ece8;border-radius:9px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--g2),var(--gold))}
-.mut{color:var(--mut);font-size:14px}.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between}.kv b{display:block;font-size:17px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
-label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;font:inherit;background:#fff}
-.two{display:grid;grid-template-columns:2fr 1fr;gap:18px}@media(max-width:800px){.two{grid-template-columns:1fr}.nav a.l{font-size:13px}}
-.badge{display:inline-flex;gap:6px;align-items:center;background:var(--goldl);border:1px solid var(--gold);color:#6b5000;padding:6px 10px;border-radius:10px;font-weight:700;font-size:13px}
-.warn{background:#fff5f5;border:1px solid #f1c0c0;border-radius:10px;padding:12px;font-size:14px}table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px;border-bottom:1px solid var(--bd);text-align:left}
-.pay{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pay div{border:2px solid var(--bd);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-weight:600}.pay div.on{border-color:var(--g2);background:var(--gl)}
-.steps{display:flex;gap:6px;margin-bottom:14px}.steps span{flex:1;height:5px;border-radius:5px;background:#dfe7e2}.steps span.on{background:var(--g2)}
-footer{text-align:center;color:var(--mut);font-size:12px;padding:30px 16px}h2{margin-top:0}
-.err{color:#b42318;font-size:14px;min-height:18px}.ok{color:var(--g2)}.chk{display:flex;gap:8px;align-items:flex-start;font-weight:500}.chk input{width:auto;margin-top:3px}
-.st-live{background:var(--gl);color:var(--g)}.st-pending{background:var(--goldl);color:#7a5c00}.st-rejected,.st-failed,.st-refunded{background:#fde7e7;color:#b42318}.st-funded,.st-active{background:#dff3ff;color:#0b5394}.st-escrow{background:var(--goldl);color:#7a5c00}
-.user{color:#fff;font-size:13px}
-</style></head><body>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Shareek — Shariah-compliant equity crowdfunding</title>
+<meta name="description" content="Shareek — invest in halal, Shariah-screened startups in Pakistan. Musharakah & Mudarabah equity crowdfunding (MVP demo).">
+<meta name="theme-color" content="#06231a" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#06231a">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Shareek">
+<meta property="og:title" content="Shareek"><meta property="og:image" content="/icons/icon-512.png">
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css">
+</head><body>
 <div class="demo">⚠ MVP / DEMO — all startups, figures and approvals are fictional sample data. Payments are mocked; no real money moves.</div>
-<header><div class="nav"><a class="logo" href="#/">Shar<span>ik</span></a><a class="l" href="#/browse">Browse</a><a class="l" href="#/how">How it works</a><span id="navx"></span><span class="sp"></span><span id="navu"></span><a class="btn gold" href="#/raise">Raise capital</a></div></header>
+<header><div class="nav"><a class="logo" href="#/"><img src="/icons/icon-192.png" alt="" width="30" height="30">Share<span>ek</span></a><a class="l" href="#/browse">Browse</a><a class="l" href="#/how">How it works</a><span id="navx"></span><span class="sp"></span><button class="btn o install" id="installBtn" type="button">⬇ Install Shareek</button><span id="navu"></span><a class="btn gold hide-m" href="#/raise">Raise capital</a><span class="kbd hide-m" title="Press / to search, g h home, g p portfolio">/</span></div></header>
 <main id="app"></main>
-<footer>Sharik (MVP demo) · Concept aligned with SECP crowdfunding regulations & AAOIFI-style Shariah principles · Not an offer of securities.</footer>
-<script src="config.js"></script>
-<script src="app.js"></script>
+<nav class="tabs" id="tabs" aria-label="Primary"></nav>
+<div id="toasts" aria-live="polite"></div>
+<footer>Shareek (MVP demo) · Concept aligned with SECP crowdfunding regulations & AAOIFI-style Shariah principles · Not an offer of securities.</footer>
+<script src="/config.js"></script>
+<script src="/ui.js" defer></script>
+<script src="/app.js" defer></script>
 </body></html>

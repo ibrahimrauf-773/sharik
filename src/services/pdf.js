@@ -4,7 +4,7 @@ const { fmtPKR } = require("../lib/money");
 const G = "#0f5132", GOLD = "#c9a227";
 function render(build) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: "A4", margin: 50, info: { Producer: "Sharik (demo)" } });
+    const doc = new PDFDocument({ size: "A4", margin: 50, info: { Producer: "Shareek (demo)" } });
     const chunks = []; doc.on("data", (c) => chunks.push(c)); doc.on("end", () => resolve(Buffer.concat(chunks))); doc.on("error", reject);
     doc.rect(0, 0, doc.page.width, 60).fill(G); doc.fillColor("#fff").fontSize(22).text("Shar", 50, 20, { continued: true }).fillColor(GOLD).text("ik");
     doc.fillColor("#7a5c00").fontSize(8).text("DEMO — fictional data. Not a legal document. No real money.", 50, 70);

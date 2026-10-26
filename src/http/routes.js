@@ -79,14 +79,14 @@ def("get", "/investments/:ref", { tag: I, summary: "Investment status", auth: "u
 def("get", "/investments/:ref/contract", { tag: I, summary: "Contract summary (JSON)", auth: "user", params: z.object({ ref: z.string().max(40) }) }, async (req) => (await camp.investmentForUser(req.user, req.params.ref)).contract);
 def("get", "/investments/:ref/contract.pdf", { tag: I, summary: "Contract summary (PDF)", auth: "user", params: z.object({ ref: z.string().max(40) }) }, async (req, res) => {
   const i = await camp.investmentForUser(req.user, req.params.ref);
-  res.type("application/pdf").set("Content-Disposition", `attachment; filename="sharik-contract-${i.ref}.pdf"`).send(await pdf.contractPdf(i.contract));
+  res.type("application/pdf").set("Content-Disposition", `attachment; filename="shareek-contract-${i.ref}.pdf"`).send(await pdf.contractPdf(i.contract));
 });
 def("post", "/payments/:id/mock-pay", { tag: I, summary: "Simulate paying at the provider; provider then calls our signed webhook (async, retried)", auth: "user", params: z.object({ id: z.string().regex(/^pay_[a-f0-9]{20}$/) }), body: z.object({ outcome: z.enum(["succeeded", "failed"]).default("succeeded") }) },
   (req) => pay.mockPay(req.user, req.params.id, req.body.outcome));
 def("get", "/portfolio", { tag: I, summary: "My holdings, distributions, purification and ledger wallet balance", auth: ["investor"] }, (req) => camp.portfolio(req.user));
 def("get", "/portfolio/statement.pdf", { tag: I, summary: "Investor statement (PDF)", auth: ["investor"] }, async (req, res) => {
   const p = await camp.portfolio(req.user);
-  res.type("application/pdf").set("Content-Disposition", 'attachment; filename="sharik-statement.pdf"').send(await pdf.statementPdf({ user: req.user, portfolio: p, generatedAt: new Date().toISOString().slice(0, 10) }));
+  res.type("application/pdf").set("Content-Disposition", 'attachment; filename="shareek-statement.pdf"').send(await pdf.statementPdf({ user: req.user, portfolio: p, generatedAt: new Date().toISOString().slice(0, 10) }));
 });
 def("post", "/portfolio/purify", { tag: I, summary: "Donate all outstanding purification (wallet → purification pool)", auth: ["investor"] }, (req) => camp.purifyAll(req.user, req.ip));
 def("post", "/wallet/withdraw", { tag: I, summary: "Withdraw wallet balance to bank (mock). Requires Idempotency-Key.", auth: ["investor"], headers: ["Idempotency-Key"], body: z.object({ amount: z.coerce.number().positive().max(1e10) }) },
@@ -156,7 +156,7 @@ if (env.devOutbox) def("get", "/dev/outbox", { tag: "dev", summary: "Dev only: r
 const owner = require("../services/owner");
 const dateQ = z.string().regex(/^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/).optional();
 const ownerQ = z.object({ from: dateQ, to: dateQ, format: z.enum(["json", "csv"]).optional(), action: z.string().max(60).optional(), limit: z.coerce.number().int().min(1).max(500).optional() });
-const sendCSV = (res, section, body) => res.status(200).type("text/csv; charset=utf-8").set("Content-Disposition", `attachment; filename="sharik-${section}-${new Date().toISOString().slice(0, 10)}.csv"`).set("Cache-Control", "no-store").send(body);
+const sendCSV = (res, section, body) => res.status(200).type("text/csv; charset=utf-8").set("Content-Disposition", `attachment; filename="shareek-${section}-${new Date().toISOString().slice(0, 10)}.csv"`).set("Cache-Control", "no-store").send(body);
 for (const section of Object.keys(owner.SECTIONS)) {
   def("get", `/owner/${section}`, { tag: "owner", summary: `Owner dashboard: ${section} (from/to = YYYY-MM-DD; ?format=csv to export)`, auth: "owner", query: ownerQ }, async (req, res) => {
     res.set("Cache-Control", "no-store");

@@ -1,4 +1,4 @@
-// Sharik owner dashboard (founder only, TOTP required). Plain JS + inline SVG charts (CSP: script-src 'self', no CDNs).
+// Shareek owner dashboard (founder only, TOTP required). Plain JS + inline SVG charts (CSP: script-src 'self', no CDNs).
 (() => {
 const API = (window.SHARIK_API_BASE || "").replace(/\/$/, "") + "/api/v1";
 const $ = (s) => document.querySelector(s), root = $("#root");
@@ -8,7 +8,7 @@ const num = (x) => (typeof x === "number" ? x.toLocaleString("en-PK") : x === tr
 const label = (k) => k.replace(/PKR$/, "").replace(/_/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
 const fmt = (k, v) => (/PKR$/.test(k) ? rs(v) : /Pct$/.test(k) && v != null ? v + "%" : num(v));
 const COLORS = ["#13805a", "#d97706", "#2563eb", "#b42318", "#7c3aed", "#0891b2", "#64748b"];
-let AT = null; const csrf = () => localStorage.getItem("sharik_csrf");
+let AT = null; const csrf = () => localStorage.getItem("shareek_csrf");
 const SECTIONS = [["overview", "Overview"], ["money", "Money"], ["campaigns", "Campaigns"], ["users", "Users & KYC"], ["investments", "Investments"], ["shariah", "Shariah"], ["activity", "Activity"], ["system", "System"], ["analytics", "Analytics"]];
 const today = new Date(), iso = (d) => d.toISOString().slice(0, 10);
 const state = { section: (location.hash.slice(1) || "overview"), from: iso(new Date(today - 89 * 864e5)), to: iso(today) };
@@ -71,10 +71,10 @@ let timer = null;
 async function render() {
   clearTimeout(timer);
   const s = SECTIONS.find((x) => x[0] === state.section) ? state.section : "overview";
-  root.innerHTML = `<header><b>🟢 Sharik · Owner</b><span class="sp"></span><label>From <input type="date" id="from" value="${state.from}"></label><label>To <input type="date" id="to" value="${state.to}"></label><button class="btn" id="apply">Apply</button><button class="btn o" id="out">Sign out</button></header>
+  root.innerHTML = `<header><img src="/icons/icon-192.png" width="30" height="30" alt="" style="border-radius:9px"><b>Shareek · Owner</b><span class="sp"></span><label>From <input type="date" id="from" value="${state.from}"></label><label>To <input type="date" id="to" value="${state.to}"></label><button class="btn" id="apply">Apply</button><button class="btn o" id="out">Sign out</button></header>
   <nav>${SECTIONS.map(([k, t]) => `<a href="#${k}" class="${k === s ? "on" : ""}">${t}</a>`).join("")}</nav><main id="main"><p class=mut>Loading…</p></main>`;
   $("#apply").onclick = () => { state.from = $("#from").value; state.to = $("#to").value; render(); };
-  $("#out").onclick = async () => { await fetch(API + "/auth/logout", { method: "POST", credentials: "include", headers: { "X-CSRF-Token": csrf() || "", ...(AT ? { Authorization: "Bearer " + AT } : {}) } }).catch(() => {}); AT = null; localStorage.removeItem("sharik_csrf"); loginView(); };
+  $("#out").onclick = async () => { await fetch(API + "/auth/logout", { method: "POST", credentials: "include", headers: { "X-CSRF-Token": csrf() || "", ...(AT ? { Authorization: "Bearer " + AT } : {}) } }).catch(() => {}); AT = null; localStorage.removeItem("shareek_csrf"); loginView(); };
   try {
     const d = await get(`/owner/${s}?from=${state.from}&to=${state.to}`);
     $("#main").innerHTML = R[s](d) + `<p class=mut style="font-size:12px">Range ${esc(new Date(d.range.from).toLocaleDateString())} – ${esc(new Date(d.range.to).toLocaleDateString())} · generated ${new Date().toLocaleTimeString()}</p>`;
@@ -85,7 +85,7 @@ async function render() {
 async function csv(section) {
   const r = await get(`/owner/${section}?format=csv&from=${state.from}&to=${state.to}`, true);
   const url = URL.createObjectURL(await r.blob()), a = document.createElement("a");
-  a.href = url; a.download = `sharik-${section}-${state.from}_to_${state.to}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  a.href = url; a.download = `shareek-${section}-${state.from}_to_${state.to}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function loginView(msg) {
   root.innerHTML = `<div id="login" class="card"><h2>Owner sign-in</h2><p class=mut>Founder only. Two-factor code required.</p><form id="lf"><label>Email<input name="email" type="email" required autocomplete="username"></label><label>Password<input name="password" type="password" required autocomplete="current-password"></label><label>Authenticator code<input name="totp" inputmode="numeric" pattern="\\d{6}" autocomplete="one-time-code" required></label><p class="err" id="err">${esc(msg || "")}</p><button class="btn" style="width:100%">Sign in</button></form></div>`;
@@ -95,7 +95,7 @@ function loginView(msg) {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) return ($("#err").textContent = j.error?.message || "Sign-in failed");
     if (j.user.role !== "owner") { $("#err").textContent = "This dashboard is for the owner account only."; return; }
-    AT = j.accessToken; localStorage.setItem("sharik_csrf", j.csrfToken); render();
+    AT = j.accessToken; localStorage.setItem("shareek_csrf", j.csrfToken); render();
   };
 }
 addEventListener("hashchange", () => { state.section = location.hash.slice(1) || "overview"; if (AT) render(); });

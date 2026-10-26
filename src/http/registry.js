@@ -69,7 +69,7 @@ function openapi(baseUrl) {
   }
   return {
     openapi: "3.0.3",
-    info: { title: "Sharik API", version: "1.0.0", description: "Shariah-compliant equity crowdfunding (demo). Money fields ending in `Paisa` are integers (1 PKR = 100 paisa). Errors: `{ error: { code, message, details? } }`. Auth: short-lived Bearer access token; refresh via httpOnly cookie + `X-CSRF-Token`." },
+    info: { title: "Shareek API", version: "1.0.0", description: "Shariah-compliant equity crowdfunding (demo). Money fields ending in `Paisa` are integers (1 PKR = 100 paisa). Errors: `{ error: { code, message, details? } }`. Auth: short-lived Bearer access token; refresh via httpOnly cookie + `X-CSRF-Token`." },
     servers: [{ url: baseUrl + "/api/v1" }],
     components: {
       securitySchemes: { bearer: { type: "http", scheme: "bearer", bearerFormat: "JWT" } },
